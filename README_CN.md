@@ -221,7 +221,7 @@ curl -X POST http://localhost:7860/v1/chat/completions \
 ### ♊ Gemini 原生 API 格式
 
 ```bash
-curl -X POST http://localhost:7860/proxy/v1beta/models/gemini-2.5-flash-lite:generateContent \
+curl -X POST http://localhost:7860/v1beta/models/gemini-2.5-flash-lite:generateContent \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer your-api-key-1" \
   -d '{

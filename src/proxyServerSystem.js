@@ -243,7 +243,7 @@ class ProxyServerSystem extends EventEmitter {
         app.use(this._createAuthMiddleware());
 
         // API routes
-        app.get("/v1/models", (req, res) => {
+        app.get(["/v1/models", "/v1beta/models"], (req, res) => {
             const modelIds = this.config.modelList || ["gemini-2.5-pro"];
 
             const models = modelIds.map(id => ({
