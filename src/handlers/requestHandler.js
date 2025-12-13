@@ -209,13 +209,13 @@ class RequestHandler {
             ? "streamGenerateContent"
             : "generateContent";
         const proxyRequest = {
-            path: `/v1beta/models/${model}:${googleEndpoint}`,
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            query_params: useRealStream ? { alt: "sse" } : {},
             body: JSON.stringify(googleBody),
-            request_id: requestId,
+            headers: { "Content-Type": "application/json" },
             is_generative: true,
+            method: "POST",
+            path: `/v1beta/models/${model}:${googleEndpoint}`,
+            query_params: useRealStream ? { alt: "sse" } : {},
+            request_id: requestId,
             streaming_mode: useRealStream ? "real" : "fake",
         };
 
@@ -257,9 +257,9 @@ class RequestHandler {
 
             if (isOpenAIStream) {
                 res.status(200).set({
-                    "Content-Type": "text/event-stream",
                     "Cache-Control": "no-cache",
                     Connection: "keep-alive",
+                    "Content-Type": "text/event-stream",
                 });
 
                 if (useRealStream) {
@@ -342,8 +342,8 @@ class RequestHandler {
                 if (lastMessage.event_type === "timeout") {
                     lastMessage = {
                         event_type: "error",
-                        status: 504,
                         message: lastMessage.message,
+                        status: 504,
                     };
                 }
 
@@ -631,17 +631,17 @@ class RequestHandler {
                 // Close thought tag if still in thought mode
                 if (streamState.inThought) {
                     const closeThoughtPayload = {
-                        id: `chatcmpl-${requestId}`,
-                        object: "chat.completion.chunk",
-                        created: Math.floor(Date.now() / 1000),
-                        model,
                         choices: [
                             {
-                                index: 0,
                                 delta: { content: "\n</think>\n" },
                                 finish_reason: null,
+                                index: 0,
                             },
                         ],
+                        created: Math.floor(Date.now() / 1000),
+                        id: `chatcmpl-${requestId}`,
+                        model,
+                        object: "chat.completion.chunk",
                     };
                     res.write(`data: ${JSON.stringify(closeThoughtPayload)}\n\n`);
                     this.logger.info("[Adapter] Closed thought tag in streaming response.");
@@ -835,11 +835,11 @@ class RequestHandler {
         }
 
         return {
-            path: cleanPath,
-            method: req.method,
-            headers: req.headers,
-            query_params: req.query || {},
             body: req.method !== "GET" ? JSON.stringify(bodyObj) : undefined,
+            headers: req.headers,
+            method: req.method,
+            path: cleanPath,
+            query_params: req.query || {},
             request_id: requestId,
             streaming_mode: this.serverSystem.streamingMode,
         };

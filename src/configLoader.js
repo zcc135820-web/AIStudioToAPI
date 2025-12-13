@@ -20,21 +20,21 @@ class ConfigLoader {
 
     loadConfiguration() {
         let config = {
-            httpPort: 7860,
-            host: "0.0.0.0",
-            wsPort: 9998,
-            streamingMode: "real",
+            apiKeys: [],
+            apiKeySource: "Not set",
+            browserExecutablePath: null,
             failureThreshold: 3,
-            switchOnUses: 40,
+            forceThinking: false,
+            forceUrlContext: false,
+            forceWebSearch: false,
+            host: "0.0.0.0",
+            httpPort: 7860,
+            immediateSwitchStatusCodes: [429, 503],
             maxRetries: 3,
             retryDelay: 2000,
-            browserExecutablePath: null,
-            apiKeys: [],
-            immediateSwitchStatusCodes: [429, 503],
-            apiKeySource: "Not set",
-            forceThinking: false,
-            forceWebSearch: false,
-            forceUrlContext: false,
+            streamingMode: "real",
+            switchOnUses: 40,
+            wsPort: 9998,
         };
 
         const configPath = path.join(process.cwd(), "config.json");

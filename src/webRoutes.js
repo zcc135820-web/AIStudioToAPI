@@ -60,17 +60,20 @@ class WebRoutes {
         app.use(cookieParser());
         app.use(
             session({
-                secret: sessionSecret,
-                resave: false,
-                saveUninitialized: false,
                 cookie: {
+
+                    httpOnly: true,
+
+                    maxAge: 86400000,
+
+                    sameSite: "lax",
                     // This allows HTTP access in production if HTTPS is not configured
                     // Set SECURE_COOKIES=true when using HTTPS/SSL
                     secure: process.env.SECURE_COOKIES === "true",
-                    httpOnly: true,
-                    sameSite: "lax",
-                    maxAge: 86400000,
                 },
+                resave: false,
+                saveUninitialized: false,
+                secret: sessionSecret,
             })
         );
     }
@@ -182,10 +185,10 @@ class WebRoutes {
         // Health check endpoint (public, no authentication required)
         app.get("/health", (req, res) => {
             const healthStatus = {
+                browserConnected: !!this.serverSystem.browserManager.browser,
                 status: "ok",
                 timestamp: new Date().toISOString(),
                 uptime: process.uptime(),
-                browserConnected: !!this.serverSystem.browserManager.browser,
             };
             res.status(200).json(healthStatus);
         });
@@ -299,12 +302,12 @@ class WebRoutes {
      */
     _escapeHtml(text) {
         const htmlEscapeMap = {
-            "&": "&amp;",
-            "<": "&lt;",
-            ">": "&gt;",
             '"': "&quot;",
+            "&": "&amp;",
             "'": "&#x27;",
             "/": "&#x2F;",
+            "<": "&lt;",
+            ">": "&gt;",
         };
         return text.replace(/[&<>"'/]/g, char => htmlEscapeMap[char]);
     }
@@ -326,30 +329,30 @@ class WebRoutes {
         });
 
         return {
+            logCount: logs.length,
+            logs: logs.join("\n"),
             status: {
-                streamingMode: `${this.serverSystem.streamingMode} (only applies when streaming is enabled)`,
+                accountDetails,
+                apiKeySource: config.apiKeySource,
+                browserConnected: !!browserManager.browser,
+                currentAuthIndex: requestHandler.currentAuthIndex,
+                failureCount: `${requestHandler.failureCount} / ${config.failureThreshold > 0 ? config.failureThreshold : "N/A"
+                }`,
                 forceThinking: this.serverSystem.forceThinking ? "✅ Enabled" : "❌ Disabled",
                 forceUrlContext: this.serverSystem.forceUrlContext ? "✅ Enabled" : "❌ Disabled",
                 forceWebSearch: this.serverSystem.forceWebSearch ? "✅ Enabled" : "❌ Disabled",
-                browserConnected: !!browserManager.browser,
                 immediateSwitchStatusCodes:
                     config.immediateSwitchStatusCodes.length > 0
                         ? `[${config.immediateSwitchStatusCodes.join(", ")}]`
                         : "Disabled",
-                apiKeySource: config.apiKeySource,
-                currentAuthIndex: requestHandler.currentAuthIndex,
-                usageCount: `${requestHandler.usageCount} / ${config.switchOnUses > 0 ? config.switchOnUses : "N/A"
-                }`,
-                failureCount: `${requestHandler.failureCount} / ${config.failureThreshold > 0 ? config.failureThreshold : "N/A"
-                }`,
                 initialIndices: `[${initialIndices.join(", ")}] (Total: ${initialIndices.length
                 })`,
-                accountDetails,
                 invalidIndices: `[${invalidIndices.join(", ")}] (Total: ${invalidIndices.length
                 })`,
+                streamingMode: `${this.serverSystem.streamingMode} (only applies when streaming is enabled)`,
+                usageCount: `${requestHandler.usageCount} / ${config.switchOnUses > 0 ? config.switchOnUses : "N/A"
+                }`,
             },
-            logs: logs.join("\n"),
-            logCount: logs.length,
         };
     }
 
@@ -381,22 +384,22 @@ class WebRoutes {
             .join("");
 
         return this._loadTemplate("status.html", {
+            accountDetailsHtml,
+            accountOptionsHtml,
+            apiKeySource: config.apiKeySource,
             browserConnected: !!browserManager.browser,
             browserConnectedClass: browserManager.browser ? "status-ok" : "status-error",
-            streamingMode: config.streamingMode,
+            currentAuthIndex: requestHandler.currentAuthIndex,
+            failureCount: `${requestHandler.failureCount} / ${config.failureThreshold > 0 ? config.failureThreshold : "N/A"}`,
             forceThinking: this.serverSystem.forceThinking ? "✅ Enabled" : "❌ Disabled",
             forceUrlContext: this.serverSystem.forceUrlContext ? "✅ Enabled" : "❌ Disabled",
             forceWebSearch: this.serverSystem.forceWebSearch ? "✅ Enabled" : "❌ Disabled",
-            apiKeySource: config.apiKeySource,
-            currentAuthIndex: requestHandler.currentAuthIndex,
-            usageCount: `${requestHandler.usageCount} / ${config.switchOnUses > 0 ? config.switchOnUses : "N/A"}`,
-            failureCount: `${requestHandler.failureCount} / ${config.failureThreshold > 0 ? config.failureThreshold : "N/A"}`,
-            totalScannedAccounts: `[${initialIndices.join(", ")}] (Total: ${initialIndices.length})`,
-            accountDetailsHtml,
             formatErrors: `[${invalidIndices.join(", ")}] (Total: ${invalidIndices.length})`,
-            accountOptionsHtml,
             logCount: logs.length,
             logs: this._escapeHtml(logs.join("\n")),
+            streamingMode: config.streamingMode,
+            totalScannedAccounts: `[${initialIndices.join(", ")}] (Total: ${initialIndices.length})`,
+            usageCount: `${requestHandler.usageCount} / ${config.switchOnUses > 0 ? config.switchOnUses : "N/A"}`,
         });
     }
 

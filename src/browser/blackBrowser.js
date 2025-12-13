@@ -178,7 +178,7 @@ class RequestProcessor {
 
         const responsePromise = Promise.race([attemptPromise, startIdleTimeout()]);
 
-        return { responsePromise, cancelTimeout };
+        return { cancelTimeout, responsePromise };
     }
 
     cancelAllOperations() {
@@ -220,8 +220,8 @@ class RequestProcessor {
 
     _buildRequestConfig(requestSpec, signal) {
         const config = {
-            method: requestSpec.method,
             headers: this._sanitizeHeaders(requestSpec.headers),
+            method: requestSpec.method,
             signal,
         };
 
@@ -420,26 +420,26 @@ class ProxySystem extends EventTarget {
             headerMap[k] = v;
         });
         this.connectionManager.transmit({
-            request_id: operationId,
             event_type: "response_headers",
-            status: response.status,
             headers: headerMap,
+            request_id: operationId,
+            status: response.status,
         });
     }
 
     _transmitChunk(chunk, operationId) {
         if (!chunk) return;
         this.connectionManager.transmit({
-            request_id: operationId,
-            event_type: "chunk",
             data: chunk,
+            event_type: "chunk",
+            request_id: operationId,
         });
     }
 
     _transmitStreamEnd(operationId) {
         this.connectionManager.transmit({
-            request_id: operationId,
             event_type: "stream_close",
+            request_id: operationId,
         });
         Logger.output("Task completed, stream end signal sent");
     }
@@ -447,10 +447,10 @@ class ProxySystem extends EventTarget {
     _sendErrorResponse(error, operationId) {
         if (!operationId) return;
         this.connectionManager.transmit({
-            request_id: operationId,
             event_type: "error",
-            status: error.status || 504,
             message: `Proxy browser error: ${error.message || "Unknown error"}`,
+            request_id: operationId,
+            status: error.status || 504,
         });
         // --- Core modification: Use different log wording based on error type ---
         if (error.name === "AbortError") {

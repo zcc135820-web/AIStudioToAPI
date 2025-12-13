@@ -40,7 +40,7 @@ class MessageQueue extends EventEmitter {
                 resolve(this.messages.shift());
                 return;
             }
-            const resolver = { resolve, reject };
+            const resolver = { reject, resolve };
             this.waitingResolvers.push(resolver);
             const timeoutId = setTimeout(() => {
                 const index = this.waitingResolvers.indexOf(resolver);

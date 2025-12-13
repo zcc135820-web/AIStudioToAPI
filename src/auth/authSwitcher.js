@@ -52,7 +52,7 @@ class AuthSwitcher {
 
         if (this.isAuthSwitching) {
             this.logger.info("🔄 [Auth] Account switching/restarting in progress, skipping duplicate operation");
-            return { success: false, reason: "Switch already in progress." };
+            return { reason: "Switch already in progress.", success: false };
         }
 
         this.isSystemBusy = true;
@@ -77,7 +77,7 @@ class AuthSwitcher {
                     this.logger.info(
                         `✅ [Auth] Single account #${singleIndex} restart/refresh successful, usage count reset.`
                     );
-                    return { success: true, newIndex: singleIndex };
+                    return { newIndex: singleIndex, success: true };
                 } catch (error) {
                     this.logger.error(`❌ [Auth] Single account restart failed: ${error.message}`);
                     throw error;
@@ -101,7 +101,7 @@ class AuthSwitcher {
                 this.logger.info(
                     `✅ [Auth] Successfully switched to account #${this.currentAuthIndex}, counters reset.`
                 );
-                return { success: true, newIndex: this.currentAuthIndex };
+                return { newIndex: this.currentAuthIndex, success: true };
             } catch (error) {
                 this.logger.error(
                     `❌ [Auth] Switching to account #${nextAuthIndex} failed: ${error.message}`
@@ -116,9 +116,9 @@ class AuthSwitcher {
                     this.usageCount = 0;
                     this.logger.info("[Auth] Failure and usage counters reset to 0 after successful fallback.");
                     return {
-                        success: false,
                         fallback: true,
                         newIndex: this.currentAuthIndex,
+                        success: false,
                     };
                 } catch (fallbackError) {
                     this.logger.error(
@@ -136,12 +136,12 @@ class AuthSwitcher {
     async switchToSpecificAuth(targetIndex) {
         if (this.isAuthSwitching) {
             this.logger.info("🔄 [Auth] Account switching in progress, skipping duplicate operation");
-            return { success: false, reason: "Switch already in progress." };
+            return { reason: "Switch already in progress.", success: false };
         }
         if (!this.authSource.availableIndices.includes(targetIndex)) {
             return {
-                success: false,
                 reason: `Switch failed: Account #${targetIndex} invalid or does not exist.`,
+                success: false,
             };
         }
 
@@ -155,7 +155,7 @@ class AuthSwitcher {
             this.logger.info(
                 `✅ [Auth] Successfully switched to account #${this.currentAuthIndex}, counters reset.`
             );
-            return { success: true, newIndex: this.currentAuthIndex };
+            return { newIndex: this.currentAuthIndex, success: true };
         } catch (error) {
             this.logger.error(
                 `❌ [Auth] Switch to specified account #${targetIndex} failed: ${error.message}`

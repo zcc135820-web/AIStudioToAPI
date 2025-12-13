@@ -1,5 +1,8 @@
 # ESLint ignore configuration
 
+# ESLint config file
+.eslintrc.js
+
 # Dependencies
 node_modules/
 

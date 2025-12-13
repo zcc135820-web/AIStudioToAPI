@@ -1,4 +1,3 @@
-/* eslint-disable sort-keys-fix/sort-keys-fix */
 /**
  * ESLint Configuration
  * Enforces code style consistency across the project

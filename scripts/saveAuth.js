@@ -67,8 +67,8 @@ const getNextAuthIndex = () => {
     console.log(`▶️  Launching browser: ${browserExecutablePath}`);
 
     const browser = await firefox.launch({
-        headless: false,
         executablePath: browserExecutablePath,
+        headless: false,
     });
 
     const context = await browser.newContext();

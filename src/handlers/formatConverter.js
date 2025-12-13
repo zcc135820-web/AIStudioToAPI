@@ -32,8 +32,8 @@ class FormatConverter {
         if (systemMessages.length > 0) {
             const systemContent = systemMessages.map(msg => msg.content).join("\n");
             systemInstruction = {
-                role: "system",
                 parts: [{ text: systemContent }],
+                role: "system",
             };
         }
 
@@ -56,8 +56,8 @@ class FormatConverter {
                         if (match) {
                             googleParts.push({
                                 inlineData: {
-                                    mimeType: match[1],
                                     data: match[2],
+                                    mimeType: match[1],
                                 },
                             });
                         }
@@ -66,8 +66,8 @@ class FormatConverter {
             }
 
             googleContents.push({
-                role: message.role === "assistant" ? "model" : "user",
                 parts: googleParts,
+                role: message.role === "assistant" ? "model" : "user",
             });
         }
 
@@ -81,11 +81,11 @@ class FormatConverter {
 
         // Generation config
         const generationConfig = {
-            temperature: openaiBody.temperature,
-            topP: openaiBody.top_p,
-            topK: openaiBody.top_k,
             maxOutputTokens: openaiBody.max_tokens,
             stopSequences: openaiBody.stop,
+            temperature: openaiBody.temperature,
+            topK: openaiBody.top_k,
+            topP: openaiBody.top_p,
         };
 
         // Handle thinking config
@@ -220,13 +220,13 @@ class FormatConverter {
                 );
                 const errorText = `[ProxySystem Error] Request blocked due to safety settings. Finish Reason: ${googleResponse.promptFeedback.blockReason}`;
                 return `data: ${JSON.stringify({
-                    id: `chatcmpl-${this._generateRequestId()}`,
-                    object: "chat.completion.chunk",
-                    created: Math.floor(Date.now() / 1000),
-                    model: modelName,
                     choices: [
-                        { index: 0, delta: { content: errorText }, finish_reason: "stop" },
+                        { delta: { content: errorText }, finish_reason: "stop", index: 0 },
                     ],
+                    created: Math.floor(Date.now() / 1000),
+                    id: `chatcmpl-${this._generateRequestId()}`,
+                    model: modelName,
+                    object: "chat.completion.chunk",
                 })}\n\n`;
             }
             return null;
@@ -271,17 +271,17 @@ class FormatConverter {
         }
 
         const openaiResponse = {
-            id: `chatcmpl-${this._generateRequestId()}`,
-            object: "chat.completion.chunk",
-            created: Math.floor(Date.now() / 1000),
-            model: modelName,
             choices: [
                 {
-                    index: 0,
                     delta,
                     finish_reason: candidate.finishReason || null,
+                    index: 0,
                 },
             ],
+            created: Math.floor(Date.now() / 1000),
+            id: `chatcmpl-${this._generateRequestId()}`,
+            model: modelName,
+            object: "chat.completion.chunk",
         };
 
         return `data: ${JSON.stringify(openaiResponse)}\n\n`;
@@ -296,15 +296,15 @@ class FormatConverter {
         if (!candidate) {
             this.logger.warn("[Adapter] No candidate found in Google response");
             return {
-                id: `chatcmpl-${this._generateRequestId()}`,
-                object: "chat.completion",
-                created: Math.floor(Date.now() / 1000),
-                model: modelName,
                 choices: [{
-                    index: 0,
-                    message: { role: "assistant", content: "" },
                     finish_reason: "stop",
+                    index: 0,
+                    message: { content: "", role: "assistant" },
                 }],
+                created: Math.floor(Date.now() / 1000),
+                id: `chatcmpl-${this._generateRequestId()}`,
+                model: modelName,
+                object: "chat.completion",
             };
         }
 
@@ -324,24 +324,24 @@ class FormatConverter {
             }
         }
 
-        const message = { role: "assistant", content };
+        const message = { content, role: "assistant" };
         if (reasoning_content) {
             message.reasoning_content = reasoning_content;
         }
 
         return {
-            id: `chatcmpl-${this._generateRequestId()}`,
-            object: "chat.completion",
-            created: Math.floor(Date.now() / 1000),
-            model: modelName,
             choices: [{
+                finish_reason: candidate.finishReason || "stop",
                 index: 0,
                 message,
-                finish_reason: candidate.finishReason || "stop",
             }],
+            created: Math.floor(Date.now() / 1000),
+            id: `chatcmpl-${this._generateRequestId()}`,
+            model: modelName,
+            object: "chat.completion",
             usage: {
-                prompt_tokens: googleResponse.usageMetadata?.promptTokenCount || 0,
                 completion_tokens: googleResponse.usageMetadata?.candidatesTokenCount || 0,
+                prompt_tokens: googleResponse.usageMetadata?.promptTokenCount || 0,
                 total_tokens: googleResponse.usageMetadata?.totalTokenCount || 0,
             },
         };

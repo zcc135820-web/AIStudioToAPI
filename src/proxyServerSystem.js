@@ -247,15 +247,15 @@ class ProxyServerSystem extends EventEmitter {
             const modelIds = this.config.modelList || ["gemini-2.5-pro"];
 
             const models = modelIds.map(id => ({
+                created: Math.floor(Date.now() / 1000),
                 id,
                 object: "model",
-                created: Math.floor(Date.now() / 1000),
                 owned_by: "google",
             }));
 
             res.status(200).json({
-                object: "list",
                 data: models,
+                object: "list",
             });
         });
 
@@ -272,8 +272,8 @@ class ProxyServerSystem extends EventEmitter {
 
     async _startWebSocketServer() {
         this.wsServer = new WebSocket.Server({
-            port: this.config.wsPort,
             host: this.config.host,
+            port: this.config.wsPort,
         });
         this.wsServer.on("connection", (ws, req) => {
             this.connectionRegistry.addConnection(ws, {

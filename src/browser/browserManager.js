@@ -83,9 +83,9 @@ class BrowserManager {
                 );
             }
             this.browser = await firefox.launch({
-                headless: true,
-                executablePath: this.browserExecutablePath,
                 args: this.launchArgs,
+                executablePath: this.browserExecutablePath,
+                headless: true,
             });
             this.browser.on("disconnected", () => {
                 this.logger.error("❌ [Browser] Browser unexpectedly disconnected!");
@@ -164,7 +164,7 @@ class BrowserManager {
         try {
             this.context = await this.browser.newContext({
                 storageState: storageStateObject,
-                viewport: { width: 1920, height: 1080 },
+                viewport: { height: 1080, width: 1920 },
             });
             this.page = await this.context.newPage();
             this.page.on("console", msg => {
@@ -311,8 +311,8 @@ class BrowserManager {
                                 "debug_screenshot_final.png"
                             );
                             await this.page.screenshot({
-                                path: screenshotPath,
                                 fullPage: true,
+                                path: screenshotPath,
                             });
                             this.logger.info(
                                 `[Debug] Final failure screenshot saved to: ${screenshotPath}`
