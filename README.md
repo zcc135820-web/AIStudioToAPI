@@ -63,18 +63,18 @@ This will:
 - Download Camoufox browser automatically
 - Launch the browser and navigate to AI Studio automatically
 - Log in with your Google account
-- Save authentication credentials to `configs/auth/auth_N.json` (where N is an auto-incremented index starting from 0)
+- Save authentication credentials to `configs/auth/auth-N.json` (where N is an auto-incremented index starting from 0)
 
-**How it works**: The script uses browser automation to capture your AI Studio session cookies and tokens, storing them securely in a JSON file. The authentication file is named with an auto-incremented index (auth_0.json, auth_1.json, etc.) to support multiple accounts. This allows the API to make authenticated requests to AI Studio without requiring interactive login on the server.
+**How it works**: The script uses browser automation to capture your AI Studio session cookies and tokens, storing them securely in a JSON file. The authentication file is named with an auto-incremented index (auth-0.json, auth-1.json, etc.) to support multiple accounts. This allows the API to make authenticated requests to AI Studio without requiring interactive login on the server.
 
 3. Locate the authentication file:
 ```powershell
-ls configs/auth/auth_*.json
+ls configs/auth/auth-*.json
 ```
 
 4. Copy the auth file to your server:
 ```powershell
-scp configs/auth/auth_*.json user@your-server:/path/to/deployment/configs/auth/
+scp configs/auth/auth-*.json user@your-server:/path/to/deployment/configs/auth/
 ```
 
 5. You can now delete the cloned repository from your Windows machine.

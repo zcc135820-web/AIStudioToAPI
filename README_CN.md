@@ -63,18 +63,18 @@ npm run setup-auth
 - 自动下载 Camoufox 浏览器
 - 启动浏览器并自动导航到 AI Studio
 - 手动登录你的 Google 账号
-- 将身份验证凭据保存到 `configs/auth/auth_N.json`（其中 N 是从 0 开始自动递增的索引）
+- 将身份验证凭据保存到 `configs/auth/auth-N.json`（其中 N 是从 0 开始自动递增的索引）
 
-**工作原理**：脚本使用浏览器自动化技术捕获您的 AI Studio 会话 Cookie 和令牌，并将它们安全地存储在 JSON 文件中。认证文件使用自动递增的索引命名（auth_0.json、auth_1.json 等）以支持多个账户。这样 API 就可以在服务器上进行经过身份验证的请求，而无需交互式登录。
+**工作原理**：脚本使用浏览器自动化技术捕获您的 AI Studio 会话 Cookie 和令牌，并将它们安全地存储在 JSON 文件中。认证文件使用自动递增的索引命名（auth-0.json、auth-1.json 等）以支持多个账户。这样 API 就可以在服务器上进行经过身份验证的请求，而无需交互式登录。
 
 3. 找到身份验证文件：
 ```powershell
-ls configs/auth/auth_*.json
+ls configs/auth/auth-*.json
 ```
 
 4. 将认证文件复制到服务器：
 ```powershell
-scp configs/auth/auth_*.json user@your-server:/path/to/deployment/configs/auth/
+scp configs/auth/auth-*.json user@your-server:/path/to/deployment/configs/auth/
 ```
 
 5. 现在可以从 Windows 机器中删除克隆的仓库了。

@@ -28,7 +28,7 @@ class AuthSource {
             );
         } else {
             this.logger.info(
-                '[Auth] No environment variable authentication detected, will use files in "configs/" directory.'
+                '[Auth] No environment variable authentication detected, will use files in "configs/auth/" directory.'
             );
         }
 
@@ -62,12 +62,12 @@ class AuthSource {
             }
             try {
                 const files = fs.readdirSync(configDir);
-                const authFiles = files.filter(file => /^auth_\d+\.json$/.test(file));
+                const authFiles = files.filter(file => /^auth-\d+\.json$/.test(file));
                 indices = authFiles.map(file =>
-                    parseInt(file.match(/^auth_(\d+)\.json$/)[1], 10)
+                    parseInt(file.match(/^auth-(\d+)\.json$/)[1], 10)
                 );
             } catch (error) {
-                this.logger.error(`[Auth] Failed to scan "config/" directory: ${error.message}`);
+                this.logger.error(`[Auth] Failed to scan "configs/auth/" directory: ${error.message}`);
                 this.availableIndices = [];
                 return;
             }
@@ -123,7 +123,7 @@ class AuthSource {
         if (this.authMode === "env") {
             return process.env[`AUTH_JSON_${index}`];
         } else {
-            const authFilePath = path.join(process.cwd(), "configs", "auth", `auth_${index}.json`);
+            const authFilePath = path.join(process.cwd(), "configs", "auth", `auth-${index}.json`);
             if (!fs.existsSync(authFilePath)) return null;
             try {
                 return fs.readFileSync(authFilePath, "utf-8");
@@ -157,4 +157,3 @@ class AuthSource {
 }
 
 module.exports = AuthSource;
-

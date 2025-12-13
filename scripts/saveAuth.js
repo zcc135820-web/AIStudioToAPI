@@ -39,7 +39,7 @@ const getNextAuthIndex = () => {
     }
 
     const files = fs.readdirSync(directory);
-    const authRegex = /^auth_(\d+)\.json$/;
+    const authRegex = /^auth-(\d+)\.json$/;
 
     let maxIndex = -1;
     files.forEach(file => {
@@ -61,7 +61,7 @@ const getNextAuthIndex = () => {
     ensureDirectoryExists(configDirPath);
 
     const newIndex = getNextAuthIndex();
-    const authFileName = `auth_${newIndex}.json`;
+    const authFileName = `auth-${newIndex}.json`;
 
     console.log(`▶️  Preparing to create new authentication file for account #${newIndex}...`);
     console.log(`▶️  Launching browser: ${browserExecutablePath}`);
