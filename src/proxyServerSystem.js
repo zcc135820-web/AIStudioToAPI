@@ -164,12 +164,13 @@ class ProxyServerSystem extends EventEmitter {
                 );
             }
 
-            return res.status(401).json({
-                error: {
-                    message:
-                        "Access denied. A valid API key was not found or is incorrect.",
-                },
-            });
+            return res.status(401)
+                .json({
+                    error: {
+                        message:
+                            "Access denied. A valid API key was not found or is incorrect.",
+                    },
+                });
         };
     }
 
@@ -255,9 +256,9 @@ class ProxyServerSystem extends EventEmitter {
         app.use(this._createAuthMiddleware());
 
         // API routes
-        app.get(["/v1/models", "/v1beta/models"], (req, res) => {
+        app.get(["/v1/models"], (req, res) => {
             const modelIds = this.config.modelList || ["gemini-2.5-pro"];
-
+            // OpenAI format
             const models = modelIds.map(id => ({
                 created: Math.floor(Date.now() / 1000),
                 id,
@@ -265,10 +266,24 @@ class ProxyServerSystem extends EventEmitter {
                 owned_by: "google",
             }));
 
-            res.status(200).json({
-                data: models,
-                object: "list",
-            });
+            res.status(200)
+                .json({
+                    data: models,
+                    object: "list",
+                });
+        });
+
+        app.get(["/v1beta/models"], (req, res) => {
+            const modelIds = this.config.modelList || ["gemini-2.5-pro"];
+            // Gemini format
+            const models = modelIds.map(id => ({
+                displayName: id,
+                name: `models/${id}`,
+                supportedGenerationMethods: ["generateContent", "streamGenerateContent"],
+            }));
+
+            res.status(200)
+                .json({ models });
         });
 
         app.post("/v1/chat/completions", (req, res) => {
