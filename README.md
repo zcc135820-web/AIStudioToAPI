@@ -4,7 +4,7 @@
 
 A tool that wraps Google AI Studio web interface to provide OpenAI API and Gemini API compatible endpoints. The service acts as a proxy, converting API requests to browser interactions with the AI Studio web interface.
 
-> **Acknowledgements**: This project is forked from [ais2api](https://github.com/Ellinav/ais2api) by [Ellinav](https://github.com/Ellinav). We express our sincere gratitude to the original author for creating this excellent foundation.
+> **👏 Acknowledgements**: This project is forked from [ais2api](https://github.com/Ellinav/ais2api) by [Ellinav](https://github.com/Ellinav). We express our sincere gratitude to the original author for creating this excellent foundation.
 
 ## ✨ Features
 
@@ -196,10 +196,27 @@ sudo nginx -t
 sudo systemctl restart nginx
 ```
 
+**⚠ Multi-layer Proxy Configuration (Important)**:
+
+If using multiple Nginx proxies (e.g., Client -> Public Gateway -> Internal Gateway -> App), inner proxies **should NOT override** `X-Real-IP`:
+
+```nginx
+# Inner Nginx (internal gateway) configuration example
+location / {
+    proxy_pass http://127.0.0.1:7860;
+    
+    # Critical: Pass through upstream X-Real-IP, do NOT override with $remote_addr
+    proxy_set_header X-Real-IP $http_x_real_ip;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    # ... other settings
+}
+```
+
 **Tips**:
+
 - If you configured HTTPS, it's recommended to set environment variable `SECURE_COOKIES=true` to enable secure cookies
 - If using HTTP only, keep `SECURE_COOKIES=false` (default) or leave it unset
-- The configuration must correctly set `X-Real-IP` and `X-Forwarded-For` headers to ensure the server can obtain the real client IP
+- Only use `proxy_set_header X-Real-IP $remote_addr;` at the **outermost public-facing gateway**, inner proxies should use `$http_x_real_ip` to pass through
 
 ## 📡 API Usage
 
@@ -313,7 +330,7 @@ Edit `configs/models.json` to customize available models and their settings.
 
 This project is a fork of [**ais2api**](https://github.com/Ellinav/ais2api) by [**Ellinav**](https://github.com/Ellinav), and fully adopts the CC BY-NC 4.0 license used by the upstream project. All usage, distribution, and modification activities must comply with all terms of the original license. See the full license text in [LICENSE](LICENSE).
 
-### Copyright / Attribution
+### ©️ Copyright / Attribution
 
 - Original work Copyright © [Ellinav](https://github.com/Ellinav)
 - Modifications and additions Copyright © 2024 [iBenzene](https://github.com/iBenzene) and contributors

@@ -4,7 +4,7 @@
 
 一个将 Google AI Studio 网页端封装为兼容 OpenAI API 和 Gemini API 的工具。该服务将充当代理，将 API 请求转换为与 AI Studio 网页界面的浏览器交互。
 
-> **鸣谢**：本项目为基于 [Ellinav](https://github.com/Ellinav) 的 [ais2api](https://github.com/Ellinav/ais2api) 分支进行的二次开发，我们对原作者创立这个优秀的项目表示诚挚的感谢。
+> **👏 鸣谢**：本项目为基于 [Ellinav](https://github.com/Ellinav) 的 [ais2api](https://github.com/Ellinav/ais2api) 分支进行的二次开发，我们对原作者创立这个优秀的项目表示诚挚的感谢。
 
 ## ✨ 功能特性
 
@@ -195,11 +195,27 @@ sudo nginx -t
 sudo systemctl restart nginx
 ```
 
+**⚠ 多层代理配置（重要）**：
+
+如果使用多层 Nginx 代理（例如：客户端 -> 公网网关 -> 内网网关 -> 应用），内层代理**不应覆盖** `X-Real-IP`：
+
+```nginx
+# 内层 Nginx（内网网关）配置示例
+location / {
+    proxy_pass http://127.0.0.1:7860;
+    
+    # 关键：透传上游的 X-Real-IP，不要用 $remote_addr 覆盖
+    proxy_set_header X-Real-IP $http_x_real_ip;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    # ... 其他配置
+}
+```
+
 **提示**：
 
 - 如果配置了 HTTPS，建议设置环境变量 `SECURE_COOKIES=true` 以启用安全 Cookie
 - 如果只使用 HTTP，保持 `SECURE_COOKIES=false`（默认值）或不设置此变量
-- 必须配置 `X-Real-IP` 和 `X-Forwarded-For` 头以确保服务器能够获取真实客户端 IP
+- 仅在**最外层公网入口**使用 `proxy_set_header X-Real-IP $remote_addr;`，内层代理使用 `$http_x_real_ip` 透传
 
 ## 📡 使用 API
 
@@ -313,7 +329,7 @@ curl -X POST http://localhost:7860/v1beta/models/gemini-2.5-flash-lite:streamGen
 
 本项目基于 [**ais2api**](https://github.com/Ellinav/ais2api)（作者：[**Ellinav**](https://github.com/Ellinav)）分支开发，并完全沿用上游项目所采用的 CC BY-NC 4.0 许可证，其使用、分发与修改行为均需遵守原有许可证的全部条款，完整许可的内容请参见 [LICENSE](LICENSE) 文件。
 
-### 版权 / 署名
+### ©️ 版权 / 署名
 
 - 原始作品 Copyright © [Ellinav](https://github.com/Ellinav)
 - 修改与新增部分 Copyright © 2024 [iBenzene](https://github.com/iBenzene) 及其他贡献者
