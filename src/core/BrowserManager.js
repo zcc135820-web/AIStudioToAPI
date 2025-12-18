@@ -23,7 +23,9 @@ class BrowserManager {
         this.browser = null;
         this.context = null;
         this.page = null;
-        this.currentAuthIndex = 0;
+        // currentAuthIndex is the single source of truth for current account, accessed via getter/setter
+        // 0 means no account is currently active
+        this._currentAuthIndex = 0;
         this.scriptFileName = "build.js";
 
         // Added for background wakeup logic from new core
@@ -67,6 +69,14 @@ class BrowserManager {
                 throw new Error(`Unsupported operating system: ${platform}`);
             }
         }
+    }
+
+    get currentAuthIndex() {
+        return this._currentAuthIndex;
+    }
+
+    set currentAuthIndex(value) {
+        this._currentAuthIndex = value;
     }
 
     /**
@@ -522,11 +532,13 @@ class BrowserManager {
     async launchOrSwitchContext(authIndex) {
         if (typeof authIndex !== "number" || authIndex <= 0) {
             this.logger.error(`[Browser] Invalid authIndex: ${authIndex}. authIndex must be > 0.`);
+            this._currentAuthIndex = 0;
             throw new Error(`Invalid authIndex: ${authIndex}. Must be > 0.`);
         }
         if (!this.browser) {
             this.logger.info("🚀 [Browser] Main browser instance not running, performing first-time launch...");
             if (!fs.existsSync(this.browserExecutablePath)) {
+                this._currentAuthIndex = 0;
                 throw new Error(`Browser executable not found at path: ${this.browserExecutablePath}`);
             }
             this.browser = await firefox.launch({
@@ -539,6 +551,8 @@ class BrowserManager {
                 this.browser = null;
                 this.context = null;
                 this.page = null;
+                this._currentAuthIndex = 0;
+                this.logger.warn("[Browser] Reset currentAuthIndex to 0 due to unexpected disconnect.");
             });
             this.logger.info("✅ [Browser] Main browser instance successfully launched.");
         }
@@ -829,7 +843,7 @@ class BrowserManager {
 
             this._startHealthMonitor();
             this._startBackgroundWakeup();
-            this.currentAuthIndex = authIndex;
+            this._currentAuthIndex = authIndex;
             this.logger.info("==================================================");
             this.logger.info(`✅ [Browser] Account ${authIndex} context initialized successfully!`);
             this.logger.info("✅ [Browser] Browser client is ready.");
@@ -837,7 +851,7 @@ class BrowserManager {
         } catch (error) {
             this.logger.error(`❌ [Browser] Account ${authIndex} context initialization failed: ${error.message}`);
             await this.closeBrowser();
-            this.currentAuthIndex = 0;
+            this._currentAuthIndex = 0;
             throw error;
         }
     }
@@ -860,18 +874,19 @@ class BrowserManager {
                 this.logger.warn(`[Browser] Error during close (ignored): ${e.message}`);
             }
 
-            // 3. Reset all references
+            // Reset all references
             this.browser = null;
             this.context = null;
             this.page = null;
-            this.logger.info("[Browser] Main browser instance closed.");
+            this._currentAuthIndex = 0;
+            this.logger.info("[Browser] Main browser instance closed, currentAuthIndex reset to 0.");
         }
     }
 
     async switchAccount(newAuthIndex) {
-        this.logger.info(`🔄 [Browser] Starting account switch: from ${this.currentAuthIndex} to ${newAuthIndex}`);
+        this.logger.info(`🔄 [Browser] Starting account switch: from ${this._currentAuthIndex} to ${newAuthIndex}`);
         await this.launchOrSwitchContext(newAuthIndex);
-        this.logger.info(`✅ [Browser] Account switch completed, current account: ${this.currentAuthIndex}`);
+        this.logger.info(`✅ [Browser] Account switch completed, current account: ${this._currentAuthIndex}`);
     }
 }
 

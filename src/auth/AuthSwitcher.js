@@ -25,6 +25,10 @@ class AuthSwitcher {
         return this.browserManager.currentAuthIndex;
     }
 
+    set currentAuthIndex(value) {
+        this.browserManager.currentAuthIndex = value;
+    }
+
     getNextAuthIndex() {
         const available = this.authSource.availableIndices;
         if (available.length === 0) return null;
@@ -83,45 +87,77 @@ class AuthSwitcher {
             }
 
             // Multi-account mode
-            const previousAuthIndex = this.currentAuthIndex;
-            const nextAuthIndex = this.getNextAuthIndex();
+            const currentIndexInArray = available.indexOf(this.currentAuthIndex);
+            const startIndex = currentIndexInArray !== -1 ? currentIndexInArray : 0;
+            const originalStartAccount = available[startIndex];
 
             this.logger.info("==================================================");
-            this.logger.info(`🔄 [Auth] Multi-account mode: Starting account switching process`);
-            this.logger.info(`   • Current account: #${previousAuthIndex}`);
-            this.logger.info(`   • Target account: #${nextAuthIndex}`);
+            this.logger.info(`🔄 [Auth] Multi-account mode: Starting intelligent account switching`);
+            this.logger.info(`   • Current account: #${this.currentAuthIndex}`);
+            this.logger.info(`   • Available accounts: [${available.join(", ")}]`);
+            this.logger.info(`   • Starting from: #${originalStartAccount}`);
             this.logger.info("==================================================");
 
-            try {
-                await this.browserManager.switchAccount(nextAuthIndex);
-                this.failureCount = 0;
-                this.usageCount = 0;
+            const failedAccounts = [];
+            for (let i = 1; i < available.length; i++) {
+                const tryIndex = (startIndex + i) % available.length;
+                const accountIndex = available[tryIndex];
+
                 this.logger.info(
-                    `✅ [Auth] Successfully switched to account #${this.currentAuthIndex}, counters reset.`
+                    `🔄 [Auth] Attempting to switch to account #${accountIndex} (${i}/${available.length - 1} other accounts)...`
                 );
-                return { newIndex: this.currentAuthIndex, success: true };
-            } catch (error) {
-                this.logger.error(`❌ [Auth] Switching to account #${nextAuthIndex} failed: ${error.message}`);
-                this.logger.warn(
-                    `🚨 [Auth] Switch failed, attempting to fall back to previous available account #${previousAuthIndex}...`
-                );
+
                 try {
-                    await this.browserManager.launchOrSwitchContext(previousAuthIndex);
-                    this.logger.info(`✅ [Auth] Successfully fell back to account #${previousAuthIndex}!`);
+                    await this.browserManager.switchAccount(accountIndex);
                     this.failureCount = 0;
                     this.usageCount = 0;
-                    this.logger.info("[Auth] Failure and usage counters reset to 0 after successful fallback.");
-                    return {
-                        fallback: true,
-                        newIndex: this.currentAuthIndex,
-                        success: false,
-                    };
-                } catch (fallbackError) {
-                    this.logger.error(
-                        `FATAL: ❌❌❌ [Auth] Emergency fallback to account #${previousAuthIndex} also failed! Service may be interrupted.`
-                    );
-                    throw fallbackError;
+
+                    if (failedAccounts.length > 0) {
+                        this.logger.info(
+                            `✅ [Auth] Successfully switched to account #${accountIndex} after skipping failed accounts: [${failedAccounts.join(", ")}]`
+                        );
+                    } else {
+                        this.logger.info(
+                            `✅ [Auth] Successfully switched to account #${accountIndex}, counters reset.`
+                        );
+                    }
+
+                    return { failedAccounts, newIndex: accountIndex, success: true };
+                } catch (error) {
+                    this.logger.error(`❌ [Auth] Account #${accountIndex} failed: ${error.message}`);
+                    failedAccounts.push(accountIndex);
                 }
+            }
+
+            this.logger.warn("==================================================");
+            this.logger.warn(
+                `⚠️ [Auth] All other accounts failed. Making final attempt with original starting account #${originalStartAccount}...`
+            );
+            this.logger.warn("==================================================");
+
+            try {
+                await this.browserManager.switchAccount(originalStartAccount);
+                this.failureCount = 0;
+                this.usageCount = 0;
+                this.logger.info(`✅ [Auth] Final attempt succeeded! Switched to account #${originalStartAccount}.`);
+                return {
+                    failedAccounts,
+                    finalAttempt: true,
+                    newIndex: originalStartAccount,
+                    success: true,
+                };
+            } catch (finalError) {
+                this.logger.error(
+                    `FATAL: ❌❌❌ [Auth] Final attempt with account #${originalStartAccount} also failed!`
+                );
+                failedAccounts.push(originalStartAccount);
+                this.logger.error(
+                    `FATAL: All ${available.length} accounts failed! Failed accounts: [${failedAccounts.join(", ")}]`
+                );
+                this.currentAuthIndex = 0;
+                throw new Error(
+                    `All ${available.length} available accounts failed to initialize (including final retry).`
+                );
             }
         } finally {
             this.isSystemBusy = false;
@@ -146,8 +182,8 @@ class AuthSwitcher {
             await this.browserManager.switchAccount(targetIndex);
             this.failureCount = 0;
             this.usageCount = 0;
-            this.logger.info(`✅ [Auth] Successfully switched to account #${this.currentAuthIndex}, counters reset.`);
-            return { newIndex: this.currentAuthIndex, success: true };
+            this.logger.info(`✅ [Auth] Successfully switched to account #${targetIndex}, counters reset.`);
+            return { newIndex: targetIndex, success: true };
         } catch (error) {
             this.logger.error(`❌ [Auth] Switch to specified account #${targetIndex} failed: ${error.message}`);
             throw error;

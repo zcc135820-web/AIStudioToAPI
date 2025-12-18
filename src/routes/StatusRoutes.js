@@ -98,8 +98,6 @@ class StatusRoutes {
                     try {
                         // Await closing to prevent repeated checks on subsequent status polls
                         await browserManager.closeBrowser();
-                        // Reset currentAuthIndex to 0 to reflect that no valid account is currently active
-                        browserManager.currentAuthIndex = 0;
                     } catch (err) {
                         this.logger.error(`[System] Error while closing browser automatically: ${err.message}`);
                     }

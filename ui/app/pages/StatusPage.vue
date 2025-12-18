@@ -316,7 +316,7 @@ const browserConnectedClass = computed(() => (state.browserConnected ? "status-o
 const browserConnectedText = computed(() => (state.browserConnected ? t("running") : t("disconnected")));
 
 const currentAccountName = computed(() => {
-    if (state.currentAuthIndex === null || state.currentAuthIndex < 0) {
+    if (state.currentAuthIndex === null || state.currentAuthIndex <= 0) {
         return t("noActiveAccount");
     }
     const account = state.accountDetails.find(acc => acc.index === state.currentAuthIndex);

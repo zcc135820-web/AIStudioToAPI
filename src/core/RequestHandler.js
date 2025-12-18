@@ -57,40 +57,81 @@ class RequestHandler {
         return this.authSwitcher.switchToSpecificAuth(targetIndex);
     }
 
+    /**
+     * Handle browser recovery when connection is lost
+     * @returns {boolean} true if recovery successful, false otherwise
+     */
+    async _handleBrowserRecovery(res) {
+        if (this.authSwitcher.isSystemBusy) {
+            this.logger.warn(
+                "[System] Connection disconnection detected, but system is switching/recovering, rejecting new request."
+            );
+            await this._sendErrorResponse(
+                res,
+                503,
+                "Server undergoing internal maintenance (account switching/recovery), please try again later."
+            );
+            return false;
+        }
+
+        this.logger.error(
+            "❌ [System] Browser WebSocket connection disconnected! Possible process crash. Attempting recovery..."
+        );
+        this.authSwitcher.isSystemBusy = true;
+        const recoveryAuthIndex = this.currentAuthIndex || 0;
+        let wasRecoveryAttempt = false;
+
+        try {
+            if (recoveryAuthIndex > 0) {
+                wasRecoveryAttempt = true;
+                await this.browserManager.launchOrSwitchContext(recoveryAuthIndex);
+                this.logger.info(`✅ [System] Browser successfully recovered to account #${recoveryAuthIndex}!`);
+            } else if (this.authSource.availableIndices.length > 0) {
+                this.logger.warn("⚠️ [System] No current account, attempting to switch to first available account...");
+                const result = await this.authSwitcher.switchToNextAuth();
+                this.logger.info(`✅ [System] Successfully recovered to account #${result.newIndex}!`);
+            } else {
+                this.logger.error("❌ [System] No available accounts for recovery.");
+                this.currentAuthIndex = 0;
+                await this._sendErrorResponse(res, 503, "Service temporarily unavailable: No available accounts.");
+                return false;
+            }
+            return true;
+        } catch (error) {
+            this.logger.error(`❌ [System] Recovery failed: ${error.message}`);
+
+            if (wasRecoveryAttempt && this.authSource.availableIndices.length > 1) {
+                this.logger.warn("⚠️ [System] Attempting to switch to alternative account...");
+                try {
+                    const result = await this.authSwitcher.switchToNextAuth();
+                    this.logger.info(`✅ [System] Successfully switched to alternative account #${result.newIndex}!`);
+                    return true;
+                } catch (switchError) {
+                    this.logger.error(`❌ [System] All accounts failed: ${switchError.message}`);
+                    await this._sendErrorResponse(res, 503, "Service temporarily unavailable: All accounts failed.");
+                    return false;
+                }
+            } else {
+                await this._sendErrorResponse(
+                    res,
+                    503,
+                    "Service temporarily unavailable: Browser crashed and cannot auto-recover."
+                );
+                return false;
+            }
+        } finally {
+            this.authSwitcher.isSystemBusy = false;
+        }
+    }
+
     // Process standard Google API requests
     async processRequest(req, res) {
         const requestId = this._generateRequestId();
 
         // Check browser connection
         if (!this.connectionRegistry.hasActiveConnections()) {
-            if (this.authSwitcher.isSystemBusy) {
-                this.logger.warn(
-                    "[System] Connection disconnection detected, but system is switching/recovering, rejecting new request."
-                );
-                return this._sendErrorResponse(
-                    res,
-                    503,
-                    "Server undergoing internal maintenance (account switching/recovery), please try again later."
-                );
-            }
-
-            this.logger.error(
-                "❌ [System] Browser WebSocket connection disconnected! Possible process crash. Attempting recovery..."
-            );
-            this.authSwitcher.isSystemBusy = true;
-            try {
-                await this.browserManager.launchOrSwitchContext(this.currentAuthIndex);
-                this.logger.info(`✅ [System] Browser successfully recovered!`);
-            } catch (error) {
-                this.logger.error(`❌ [System] Browser auto-recovery failed: ${error.message}`);
-                return this._sendErrorResponse(
-                    res,
-                    503,
-                    "Service temporarily unavailable: Backend browser instance crashed and cannot auto-recover, please contact administrator."
-                );
-            } finally {
-                this.authSwitcher.isSystemBusy = false;
-            }
+            const recovered = await this._handleBrowserRecovery(res);
+            if (!recovered) return;
         }
 
         if (this.authSwitcher.isSystemBusy) {
@@ -176,34 +217,8 @@ class RequestHandler {
 
         // Check browser connection
         if (!this.connectionRegistry.hasActiveConnections()) {
-            if (this.authSwitcher.isSystemBusy) {
-                this.logger.warn(
-                    "[System] Connection disconnection detected, but system is switching/recovering, rejecting new request."
-                );
-                return this._sendErrorResponse(
-                    res,
-                    503,
-                    "Server undergoing internal maintenance (account switching/recovery), please try again later."
-                );
-            }
-
-            this.logger.error(
-                "❌ [System] Browser WebSocket connection disconnected! Possible process crash. Attempting recovery..."
-            );
-            this.authSwitcher.isSystemBusy = true;
-            try {
-                await this.browserManager.launchOrSwitchContext(this.currentAuthIndex);
-                this.logger.info(`✅ [System] Browser successfully recovered!`);
-            } catch (error) {
-                this.logger.error(`❌ [System] Browser auto-recovery failed: ${error.message}`);
-                return this._sendErrorResponse(
-                    res,
-                    503,
-                    "Service temporarily unavailable: Backend browser instance crashed and cannot auto-recover, please contact administrator."
-                );
-            } finally {
-                this.authSwitcher.isSystemBusy = false;
-            }
+            const recovered = await this._handleBrowserRecovery(res);
+            if (!recovered) return;
         }
 
         if (this.authSwitcher.isSystemBusy) {
