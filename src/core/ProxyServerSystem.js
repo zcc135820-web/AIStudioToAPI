@@ -142,6 +142,13 @@ class ProxyServerSystem extends EventEmitter {
                 return next();
             }
 
+            // Allow access if session is authenticated (e.g. browser accessing /vnc or API from UI)
+            if (req.session && req.session.isAuthenticated) {
+                if (req.path === "/vnc") {
+                    return next();
+                }
+            }
+
             const serverApiKeys = this.config.apiKeys;
             if (!serverApiKeys || serverApiKeys.length === 0) {
                 return next();
