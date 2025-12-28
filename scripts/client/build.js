@@ -192,16 +192,44 @@ class RequestProcessor {
             try {
                 const bodyObj = JSON.parse(requestSpec.body);
 
-                // --- Module 1: Smart Filtering (Keep) ---
+                // --- Module 1: Image/Embedding/TTS Model Filtering ---
+                // Remove tools, thinkingConfig, responseModalities
                 const isImageModel = requestSpec.path.includes("-image") || requestSpec.path.includes("imagen");
-
-                if (isImageModel) {
+                const isEmbeddingOrTtsModel =
+                    requestSpec.path.includes("embedding") || requestSpec.path.includes("tts");
+                if (isImageModel || isEmbeddingOrTtsModel) {
                     const incompatibleKeys = ["tool_config", "toolChoice", "tools"];
                     incompatibleKeys.forEach(key => {
                         if (Object.prototype.hasOwnProperty.call(bodyObj, key)) delete bodyObj[key];
                     });
                     if (bodyObj.generationConfig?.thinkingConfig) {
                         delete bodyObj.generationConfig.thinkingConfig;
+                    }
+                    if (bodyObj.generationConfig?.responseModalities) {
+                        delete bodyObj.generationConfig.responseModalities;
+                    }
+                }
+
+                // --- Module 2: Computer-Use Model Filtering ---
+                // Remove tools, responseModalities
+                const isComputerUseModel = requestSpec.path.includes("computer-use");
+                if (isComputerUseModel) {
+                    const incompatibleKeys = ["tool_config", "toolChoice", "tools"];
+                    incompatibleKeys.forEach(key => {
+                        if (Object.prototype.hasOwnProperty.call(bodyObj, key)) delete bodyObj[key];
+                    });
+                    if (bodyObj.generationConfig?.responseModalities) {
+                        delete bodyObj.generationConfig.responseModalities;
+                    }
+                }
+
+                // --- Module 3: Robotics Model Filtering ---
+                // Remove googleSearch, urlContext from tools; also remove responseModalities
+                const isRoboticsModel = requestSpec.path.includes("robotics");
+                if (isRoboticsModel) {
+                    if (Array.isArray(bodyObj.tools)) {
+                        bodyObj.tools = bodyObj.tools.filter(t => !t.googleSearch && !t.urlContext);
+                        if (bodyObj.tools.length === 0) delete bodyObj.tools;
                     }
                     if (bodyObj.generationConfig?.responseModalities) {
                         delete bodyObj.generationConfig.responseModalities;
