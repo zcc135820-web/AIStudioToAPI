@@ -591,15 +591,40 @@ class BrowserManager {
 
         if (process.env.TARGET_DOMAIN) {
             const lines = buildScriptContent.split("\n");
+            let domainReplaced = false;
             for (let i = 0; i < lines.length; i++) {
                 if (lines[i].includes("this.targetDomain =")) {
                     this.logger.info(`[Config] Found targetDomain line: ${lines[i]}`);
-                    lines[i] = `    this.targetDomain = "${process.env.TARGET_DOMAIN}";`;
+                    lines[i] = `        this.targetDomain = "${process.env.TARGET_DOMAIN}";`;
                     this.logger.info(`[Config] Replaced with: ${lines[i]}`);
+                    domainReplaced = true;
                     break;
                 }
             }
-            buildScriptContent = lines.join("\n");
+            if (domainReplaced) {
+                buildScriptContent = lines.join("\n");
+            } else {
+                this.logger.warn("[Config] Failed to find targetDomain line in build.js, ignoring.");
+            }
+        }
+
+        if (process.env.WS_PORT) {
+            const lines = buildScriptContent.split("\n");
+            let portReplaced = false;
+            for (let i = 0; i < lines.length; i++) {
+                if (lines[i].includes('constructor(endpoint = "ws://127.0.0.1:9998")')) {
+                    this.logger.info(`[Config] Found port config line: ${lines[i]}`);
+                    lines[i] = `    constructor(endpoint = "ws://127.0.0.1:${process.env.WS_PORT}") {`;
+                    this.logger.info(`[Config] Replaced with: ${lines[i]}`);
+                    portReplaced = true;
+                    break;
+                }
+            }
+            if (portReplaced) {
+                buildScriptContent = lines.join("\n");
+            } else {
+                this.logger.warn("[Config] Failed to find port config line in build.js, using default.");
+            }
         }
 
         try {
